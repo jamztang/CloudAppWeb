@@ -1,0 +1,160 @@
+<html>
+  <head>
+
+    <!-- Listen for the cloudkitloaded event on the window object. -->
+    <script>
+      window.addEventListener('cloudkitloaded', function() {
+        // Now the global namespace CloudKit is defined and you can proceed
+        // to configure your application.
+        console.log("cloudkitloaded");
+
+        CloudKit.configure({
+          locale: 'en-us',
+
+          containers: [{
+
+            // Change this to a container identifier you own.
+            containerIdentifier: 'iCloud.io.magicsketch.CloudAppiOS',
+
+            apiTokenAuth: {
+              // And generate a web token through CloudKit Dashboard.
+              apiToken: 'dc34507f78b8f5804c73d8e2e168f209d58e3b0a173cd0e7ba9c5c7951397afb',
+
+              persist: true, // Sets a cookie.
+
+              signInButton: {
+                id: 'apple-sign-in-button',
+                theme: 'black' // Other options: 'white', 'white-with-outline'.
+              },
+
+              signOutButton: {
+                id: 'apple-sign-out-button',
+                theme: 'black'
+              }
+            },
+
+            environment: 'development'
+          }]
+        });
+
+        fetchFromURL();
+
+      });
+    </script>
+
+    <!-- Include the script with the ‘async’ attribute. -->
+    <script src="https://cdn.apple-cloudkit.com/ck/2/cloudkit.js" async></script>
+    <script
+      src="https://code.jquery.com/jquery-3.2.1.min.js"
+      integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+      crossorigin="anonymous"></script>
+
+    <script>
+
+      function renderRecord(record, zoneID, databaseScope) {
+        console.log("rendering record: ");
+        console.log(record);
+
+        $('#imageURL').attr('src', record.fields.image.value.downloadURL)
+        $('#recordName').html(record["recordName"])
+        $('#type').html(record["type"])
+        $('#json').html(JSON.stringify(record, null, 2))
+
+      }
+
+      $.urlParam = function(name){
+        var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+        if (results==null){
+          return null;
+        }
+        else{
+          return results[1] || 0;
+        }
+      }
+
+      function fetchFromURL() {
+        demoFetchRecord($.urlParam('scope'), $.urlParam('name'), $.urlParam('zone'))
+      }
+
+      function fetch() {
+
+        console.log("fetch");
+        demoFetchRecord('PUBLIC', 'f6e9af75-142e-4481-9cf9-f1a6af234520', '_defaultZone')
+        console.log("stop");
+      }
+
+      function demoFetchRecord(
+        databaseScope,recordName,zoneName,ownerRecordName
+      ) {
+
+        console.log("demoFetchRecord");
+        var container = CloudKit.getDefaultContainer();
+        var database = container.getDatabaseWithDatabaseScope(
+          CloudKit.DatabaseScope[databaseScope]
+        );
+
+        var zoneID,options;
+
+        if(zoneName) {
+          zoneID = { zoneName: zoneName };
+          if(ownerRecordName) {
+            zoneID.ownerRecordName = ownerRecordName;
+          }
+          options = { zoneID: zoneID };
+        }
+
+        return database.fetchRecords(recordName,options)
+          .then(function(response) {
+            if(response.hasErrors) {
+
+              // Handle the errors in your app.
+              throw response.errors[0];
+
+            } else {
+              var record = response.records[0];
+
+              // Render the fetched record.
+              return renderRecord(record,zoneID,databaseScope);
+            }
+          });
+      }
+      </script>
+  </head>
+  <body>
+
+    hello world
+
+    <button onclick="fetch()">fetch</button>
+
+    <div id="record">
+      <table>
+        <tr>
+          <td colspan="2">
+            <img src="placeholder.png" id="imageURL"></img>
+          </td>
+        </tr>
+        <tr>
+          <td>name
+          </td>
+          <td><p id="recordName">record-title</p>
+          </td>
+        </td>
+        <tr>
+          <td>type
+          </td>
+          <td><p id="type">type</p>
+          </td>
+        </td>
+        <tr>
+          <td colspan="2">
+            <textarea id="json">
+            </textarea>
+          </td>
+        </tr>
+
+      </table>
+
+    </div>
+
+  </body>
+</html>
